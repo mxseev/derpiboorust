@@ -7,7 +7,7 @@ This crate provides Rust bindings for [Derpibooru API](https://derpibooru.org/pa
 
 ## Example usage:
 ```rust
-use derpibooru::{SyncAdapter, Search};
+use derpiboorust::{SyncAdapter, Search};
 
 let adapter = SyncAdapter::new();
 let request = Search::new("69 position,safe")

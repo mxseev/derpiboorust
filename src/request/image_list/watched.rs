@@ -2,7 +2,7 @@ use failure::Error;
 use reqwest::Url;
 
 use super::{Bound, Order};
-use crate::request::{response::ImagesResponse, Request, UrlBuilder};
+use crate::request::{build_url, response::ImagesResponse, QueryPairs, Request};
 
 /// Request for fetching user watched images (`/images/watched.json`).
 /// ```
@@ -17,48 +17,41 @@ use crate::request::{response::ImagesResponse, Request, UrlBuilder};
 
 #[derive(Debug)]
 pub struct Watched<'a> {
-    key: &'a str,
-    constraint: Option<&'a str>,
-    constraint_bound: Option<Bound<'a>>,
-    constraint_order: Option<Order>,
-    page: Option<u64>,
-    random: bool,
+    query: QueryPairs<'a>,
 }
 impl<'a> Watched<'a> {
     /// Create new watched images request.
     pub fn new(key: &'a str) -> Self {
-        Watched {
-            key,
-            constraint: None,
-            constraint_bound: None,
-            page: None,
-            constraint_order: None,
-            random: false,
-        }
+        let mut query = QueryPairs::new();
+        query.insert("key", key);
+
+        Watched { query }
     }
     /// Search and sort by a specific field.
     pub fn constraint(mut self, name: &'a str) -> Self {
-        self.constraint = Some(name);
+        self.query.insert("constraint", name);
         self
     }
     /// When specified, constraint field must be match bound.
     pub fn constraint_bound(mut self, bound: Bound<'a>) -> Self {
-        self.constraint_bound = Some(bound);
+        let bound_query = bound.query_pair();
+        self.query.insert(bound_query.0, bound_query.1);
+
         self
     }
     /// Sort order for constraint.
     pub fn constraint_order(mut self, order: Order) -> Self {
-        self.constraint_order = Some(order);
+        self.query.insert("order", order);
         self
     }
     /// The page offset.
     pub fn page(mut self, page: u64) -> Self {
-        self.page = Some(page);
+        self.query.insert("page", page);
         self
     }
     /// When set, order the images randomly.
     pub fn random(mut self) -> Self {
-        self.random = true;
+        self.query.insert("random", true);
         self
     }
 }
@@ -67,27 +60,7 @@ impl<'a> Request<'a> for Watched<'a> {
     type ResponseValue = ImagesResponse;
 
     fn build(&self) -> Result<Url, Error> {
-        let mut url = UrlBuilder::new("images/watched.json");
-        url.append_query_pair("key", self.key);
-
-        if let Some(constraint) = &self.constraint {
-            url.append_query_pair("constraint", constraint);
-        }
-        if let Some(bound) = &self.constraint_bound {
-            let bound_query = bound.query();
-            url.append_query_pair(bound_query.0, bound_query.1);
-        }
-        if let Some(page) = self.page {
-            url.append_query_pair("page", page);
-        }
-        if let Some(order) = &self.constraint_order {
-            url.append_query_pair("order", order.query());
-        }
-        if self.random {
-            url.append_query_pair("random", "true");
-        }
-
-        url.build()
+        build_url("images/watched.json", &self.query)
     }
 }
 
@@ -108,8 +81,8 @@ fn request() {
             ("key", "qwezxc123"),
             ("constraint", "id"),
             ("gte", "1941825"),
-            ("page", "2"),
             ("order", "d"),
+            ("page", "2"),
             ("random", "true"),
         ],
     )

@@ -1,7 +1,7 @@
 use failure::Error;
 use reqwest::Url;
 
-use super::{response::ImageResponse, Request, UrlBuilder};
+use super::{build_url, response::ImageResponse, QueryPairs, Request};
 
 /// Request for fetching single image (`/images/1941825.json`).
 /// ```
@@ -10,6 +10,7 @@ use super::{response::ImageResponse, Request, UrlBuilder};
 /// let request = Image::new(1941825);
 /// ```
 
+#[derive(Debug)]
 pub struct Image {
     id: u64,
 }
@@ -24,10 +25,10 @@ impl<'a> Request<'a> for Image {
     type ResponseValue = ImageResponse;
 
     fn build(&self) -> Result<Url, Error> {
+        let query = QueryPairs::new();
         let image_url = format!("{}.json", self.id);
-        let url = UrlBuilder::new(&image_url);
 
-        url.build()
+        build_url(&image_url, &query)
     }
 }
 

@@ -1,7 +1,7 @@
 use failure::Error;
 use reqwest::Url;
 
-use super::{response::GalleryResponse, Request, UrlBuilder};
+use super::{build_url, response::GalleryResponse, QueryPairs, Request};
 
 /// Request for fetching user gallery (`/galleries/username/id.json`).
 /// ```
@@ -14,20 +14,22 @@ use super::{response::GalleryResponse, Request, UrlBuilder};
 pub struct Gallery<'a> {
     username: &'a str,
     id: u64,
-    page: Option<u64>,
+    query: QueryPairs<'a>,
 }
 impl<'a> Gallery<'a> {
     /// Create new gallery request.
     pub fn new(username: &'a str, id: u64) -> Self {
+        let query = QueryPairs::new();
+
         Gallery {
             username,
             id,
-            page: None,
+            query,
         }
     }
     /// The page offset.
     pub fn page(mut self, page: u64) -> Self {
-        self.page = Some(page);
+        self.query.insert("page", page);
         self
     }
 }
@@ -37,13 +39,7 @@ impl<'a> Request<'a> for Gallery<'a> {
 
     fn build(&self) -> Result<Url, Error> {
         let gallery_url = format!("galleries/{}/{}.json", self.username, self.id);
-        let mut url = UrlBuilder::new(&gallery_url);
-
-        if let Some(page) = self.page {
-            url.append_query_pair("page", page);
-        }
-
-        url.build()
+        build_url(&gallery_url, &self.query)
     }
 }
 

@@ -1,7 +1,7 @@
 use failure::Error;
 use reqwest::Url;
 
-use super::{response::ListsResponse, Request, UrlBuilder};
+use super::{build_url, response::ListsResponse, QueryPairs, Request};
 
 /// Request for fetching image lists (`/lists.json`).
 /// ```
@@ -12,24 +12,26 @@ use super::{response::ListsResponse, Request, UrlBuilder};
 ///     .last("2d");
 /// ```
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct Lists<'a> {
-    page: Option<u64>,
-    last: Option<&'a str>,
+    query: QueryPairs<'a>,
 }
 impl<'a> Lists<'a> {
     /// Create new lists request.
+    #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
-        Lists::default()
+        let query = QueryPairs::new();
+
+        Lists { query }
     }
     /// The page offset.
     pub fn page(mut self, page: u64) -> Self {
-        self.page = Some(page);
+        self.query.insert("page", page);
         self
     }
     /// Sampling period, specified in weeks, days, or hours.
     pub fn last(mut self, last: &'a str) -> Self {
-        self.last = Some(last);
+        self.query.insert("last", last);
         self
     }
 }
@@ -38,16 +40,7 @@ impl<'a> Request<'a> for Lists<'a> {
     type ResponseValue = ListsResponse;
 
     fn build(&self) -> Result<Url, Error> {
-        let mut url = UrlBuilder::new("lists.json");
-
-        if let Some(page) = self.page {
-            url.append_query_pair("page", page);
-        }
-        if let Some(last) = self.last {
-            url.append_query_pair("last", last);
-        }
-
-        url.build()
+        build_url("lists.json", &self.query)
     }
 }
 
